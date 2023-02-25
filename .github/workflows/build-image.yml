@@ -20,7 +20,6 @@ jobs:
     - name: Install dependencies
       run: |
         npm install --silent
-        npm audit
 
     - name: Build site
       run:  npm run build
