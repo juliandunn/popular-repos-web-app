@@ -4,7 +4,7 @@
   "description": "The most popular repos by language on github.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pied-piper-inc/container-service-azure"
+    "url": "https://github.com/juliandunn/popular-repos-web-app"
   },
   "main": "index.js",
   "scripts": {
