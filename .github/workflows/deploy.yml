@@ -1,4 +1,4 @@
-name: Deploy Site
+name: Deploy to Azure Webapps
 on:
   workflow_dispatch:
   pull_request:
@@ -10,16 +10,16 @@ on:
       
 jobs:
   build:
-    name: Build
+    name: Setup
     runs-on: ubuntu-latest
     permissions:
       id-token: write
     steps:
     - uses: actions/checkout@v3
-    - name: Setup node 12
-      uses: actions/setup-node@v3.5.1
+    - name: Setup node
+      uses: actions/setup-node@v3
       with:
-        node-version: '12.x'
+        node-version: '14.x'
 
     - name: Cache node modules
       id: cache-node
@@ -39,7 +39,7 @@ jobs:
       run:  npm run build
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+      uses: docker/setup-buildx-action@v2
 
     - name: Azure login
       uses: azure/login@v1
@@ -48,11 +48,16 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+    - name: 'Run az commands'
+      run: |
+          az account show
+          az group list
+
     - name: Login to Container Registry
       run: az acr login --name ${{ secrets.AZURE_REGISTRY_NAME }} --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Build and push
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v4
       with:
         context: .
         file: ./Dockerfile
@@ -68,7 +73,7 @@ jobs:
       id-token: write
     runs-on: ubuntu-latest
     environment: 
-      name: review-lab
+      name: review
       url: ${{ steps.popular-repos-web.outputs.webapp-url }}
     needs: build
     steps:
@@ -81,13 +86,13 @@ jobs:
 
     - name: Create deployment slot
       run: |
-        az webapp deployment slot create --name popular-repos --resource-group pied-piper-inc --slot review-pr-${{ github.event.number }} --configuration-source popular-repos
+        az webapp deployment slot create --name juliandunn-popular-repos-web-app --resource-group Actions_Demos-Popular_Repos_Web_App --slot review-pr-${{ github.event.number }} --configuration-source popular-repos
 
     - name: Deploy popular repos
       uses: azure/webapps-deploy@v2
       id: popular-repos-web
       with:
-        app-name: 'popular-repos'
+        app-name: 'juliandunn-popular-repos-web-app'
         images: '${{ secrets.AZURE_REGISTRY_NAME }}/popular-repos:${{ github.event.pull_request.head.sha }}'
         slot-name: review-pr-${{ github.event.number }}
 
@@ -114,7 +119,7 @@ jobs:
       uses: azure/webapps-deploy@v2
       id: popular-repos-web
       with:
-        app-name: 'popular-repos'
+        app-name: 'juliandunn-popular-repos-web-app'
         images: '${{ secrets.AZURE_REGISTRY_NAME }}/popular-repos:${{ github.sha }}'
         slot-name: staging
 
@@ -139,5 +144,5 @@ jobs:
 
     - name: Swap staging to production
       run: |
-        az webapp deployment slot swap --name popular-repos --resource-group pied-piper-inc --slot staging --target-slot production
+        az webapp deployment slot swap --name juliandunn-popular-repos-web-app --resource-group Actions_Demos-Popular_Repos_Web_App --slot staging --target-slot production
 
